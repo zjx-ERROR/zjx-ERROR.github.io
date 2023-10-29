@@ -1,23 +1,23 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Self Reliance | JuiceBar</title>
+    <title>Self Reliance | Turtle Titan</title>
     <meta name="description"
         content="I read the other day some verses written by an eminent painter which were original and not conventional. The soul always hears an admonition in such lines, let the subject be what it may. The sentiment they instill is of more value than any thought they may contain. To believe your own thought, to believe that what is true for you in your private heart is true for all men, —that is genius.">
-    <link rel="canonical" href="https://juicebar-demo.add1.dev/post/self-reliance/" />
+    <link rel="canonical" href="https://zjx-ERROR.github.io/post/self-reliance/" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css">
     
-    <link rel="stylesheet" href="https://juicebar-demo.add1.dev/scss/style.min.aa7209164f013c6883aa54384ea45a46e582eacf9a17e9565badebd557dd1059.css">
+    <link rel="stylesheet" href="https://zjx-ERROR.github.io/scss/style.min.aa7209164f013c6883aa54384ea45a46e582eacf9a17e9565badebd557dd1059.css">
 
     <meta property="og:title" content="Self Reliance" />
 <meta property="og:description" content="I read the other day some verses written by an eminent painter which were original and not conventional. The soul always hears an admonition in such lines, let the subject be what it may. The sentiment they instill is of more value than any thought they may contain. To believe your own thought, to believe that what is true for you in your private heart is true for all men, —that is genius." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://juicebar-demo.add1.dev/post/self-reliance/" /><meta property="article:section" content="post" />
+<meta property="og:url" content="https://zjx-ERROR.github.io/post/self-reliance/" /><meta property="article:section" content="post" />
 <meta property="article:published_time" content="2023-02-18T22:19:13+08:00" />
-<meta property="article:modified_time" content="2023-02-18T22:19:13+08:00" /><meta property="og:site_name" content="JuiceBar" />
+<meta property="article:modified_time" content="2023-02-18T22:19:13+08:00" /><meta property="og:site_name" content="Turtle Titan" />
 
     <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Self Reliance"/>
@@ -32,13 +32,13 @@
         <div class="navbar-brand">
             <a href="/" title="home" class="navbar-item">
                 <span class="logo">
-                    <h1>JuiceBar</h1>
+                    <h1>Turtle Titan</h1>
                 </span>
             </a>
 
             
             <a id="theme-toggle" class="theme-toggle" href="#">
-                <img src="https://juicebar-demo.add1.dev/svg/sun.svg" alt="sun icon" class="theme-icon" />
+                <img src="https://zjx-ERROR.github.io/svg/sun.svg" alt="sun icon" class="theme-icon" />
             </a>
 
             <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
@@ -50,8 +50,6 @@
 
         <div class="navbar-menu">
             <div class="navbar-start">
-                
-                <a href="/about" class="navbar-item">About</a>
                 
                 <a href="/post" class="navbar-item">Blog</a>
                 
@@ -94,11 +92,11 @@
         let themeIcon = document.querySelector(".theme-icon");
         if (theme === "dark") {
             body.classList.add("dark-mode");
-            themeIcon.src = "https:\/\/juicebar-demo.add1.dev\/svg/moon.svg";
+            themeIcon.src = "https:\/\/zjx-ERROR.github.io\/svg/moon.svg";
             themeIcon.alt = "moon icon";
         } else {
             body.classList.remove("dark-mode");
-            themeIcon.src = "https:\/\/juicebar-demo.add1.dev\/svg/sun.svg";
+            themeIcon.src = "https:\/\/zjx-ERROR.github.io\/svg/sun.svg";
             themeIcon.alt = "sun icon";
         }
         
@@ -142,18 +140,18 @@
                     <div class="columns is-vcentered is-mobile">
                         
                         <div class="column is-narrow">
-                            <img src="/images/profile.jpg" class="author-image">
+                            <img src="/images/2.png" class="author-image">
                         </div>
                         
                         <div class="column">
-                            <p>hotjuicew</p>
+                            <p>张家熙</p>
                             <p><time>February 18, 2023</time>
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="small-categories-container">
-                    <a href="/categories/essay">Essay</a>
+                    <a href="/categories/rust">Rust</a>
                 </div>
             </div>
         </div>
@@ -255,60 +253,14 @@ Our valors are our best gods.&rdquo;</p>
                 d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"
                 p-id="3990" fill="#363636"></path>
         </svg>
-    </a><hr style="border-top: 1px solid #EEEEEE;">
-<div id="comment"></div>
-<script>
-    const getStoredTheme = () => localStorage.getItem("theme") === "dark" ? "dark" : "light";
-
-    const setGiscusTheme = () => {
-        const sendMessage = (message) => {
-            const iframe = document.querySelector('iframe.giscus-frame');
-            if (iframe) {
-                iframe.contentWindow.postMessage({giscus: message}, 'https://giscus.app');
-            }
-        }
-        sendMessage({setConfig: {theme: getStoredTheme()}})
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const giscusAttributes = {
-            "src": "https://giscus.app/client.js",
-            "data-repo": "hotjuicew\/blog",
-            "data-repo-id": "R_kgDOHHQOuw",
-            "data-category": "Announcements",
-            "data-category-id": "DIC_kwDOHHQOu84CWCQ3",
-            "data-mapping": "og:title",
-            "data-reactions-enabled": "1",
-            "data-emit-metadata": "0",
-            "data-input-position": "bottom",
-            "data-theme": getStoredTheme(),
-            "data-lang": "en",
-            "data-loading": "lazy",
-            "crossorigin": "anonymous",
-        };
-
-        
-        const giscusScript = document.createElement("script");
-        Object.entries(giscusAttributes).forEach(
-            ([key, value]) => giscusScript.setAttribute(key, value));
-        document.getElementById("comment").appendChild(giscusScript);
-
-        
-        const themeToggle = document.querySelector(".theme-toggle");
-        if (themeToggle) {
-            themeToggle.addEventListener("click", setGiscusTheme);
-        }
-    });
-
-</script>
-
+    </a>
 
 <div class="pp-container">
         <section class="pre-and-post">
             <div class="has-text-left">
                 
                 <p>Previous post</p>
-                <a href="https://juicebar-demo.add1.dev/post/%E4%BB%80%E4%B9%88%E6%98%AF%E5%A5%BD%E5%B0%8F%E8%AF%B4/">什么是好小说</a>
+                <a href="https://zjx-ERROR.github.io/post/markdown_syntax_guide/">Markdown Syntax Guide</a>
                 
             </div>
             <div class="has-text-right">
@@ -321,13 +273,8 @@ Our valors are our best gods.&rdquo;</p>
 
         </main><footer class="footer">
     <div class="content has-text-centered">
-    <span>&copy; 2023 <a href="https://juicebar-demo.add1.dev/">JuiceBar</a></span>
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" target="_blank">Hugo</a> &
-        <a href="https://github.com/hotjuicew/hugo-JuiceBar" target="_blank">JuiceBar</a>
-    </span>
+        <span>&copy; 2023 <a href="https://zjx-ERROR.github.io/">Turtle Titan</a></span>
     </div>
-  </footer></body>
+</footer></body>
 </html>
 
