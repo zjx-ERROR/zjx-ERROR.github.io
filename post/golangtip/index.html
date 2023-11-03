@@ -183,6 +183,7 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
                 <div id="hide"><nav id="TableOfContents">
   <ul>
     <li><a href="#1-值传递还是引用传递">1. 值传递还是引用传递</a></li>
+    <li><a href="#2-继承">2. 继承</a></li>
   </ul>
 </nav></div>
             </aside>
@@ -298,7 +299,47 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
 <p>第一张图非常简单。由于没有使用堆，因此没有垃圾收集器。</p>
 <p>对于第二张图，指针的使用迫使go编译器将变量逃逸到堆上，并且给垃圾收集器施加压力。</p>
 <p>总之，不要假设值传递会很慢，如果关注性能，可以使用go profiler。</p>
-
+<h2 id="2-继承">2. 继承</h2>
+<p>重新定义 VS 继承类型</p>
+<p>Go类型系统不像C++或Java那样面向对象。Go无法真正继承结构体或接口，但可以将它们嵌套在一起以创建更复杂的结构体或接口。</p>
+<blockquote>
+<p><strong>There is</strong> an important way in which embedding differs from subclassing. When we embed a type, the methods of that type become methods of the outer type, but when they&rsquo;re invoked the receiver of the method is the inner type, not the outer one.</p>
+<p><a href="https://golang.org/doc/effective_go">https://golang.org/doc/effective_go</a></p>
+</blockquote>
+<p>除了嵌入类型之外，Go还允许重新定义类型。重新定义继承类型的字段，但不继承其方法。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">t1</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">f1</span> <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">t1</span>) <span style="color:#a6e22e">t1method</span>() {
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">t2</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">t1</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">t3</span> <span style="color:#a6e22e">t1</span> 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">mt1</span> <span style="color:#a6e22e">t1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">mt2</span> <span style="color:#a6e22e">t2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">mt3</span> <span style="color:#a6e22e">t3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 所有case字段都能继承
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">_</span> = <span style="color:#a6e22e">mt1</span>.<span style="color:#a6e22e">f1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">_</span> = <span style="color:#a6e22e">mt2</span>.<span style="color:#a6e22e">f1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">_</span> = <span style="color:#a6e22e">mt3</span>.<span style="color:#a6e22e">f1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// 正常调用
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">mt1</span>.<span style="color:#a6e22e">t1method</span>() 
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">mt2</span>.<span style="color:#a6e22e">t1method</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// mt3.t1method未定义
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">mt3</span>.<span style="color:#a6e22e">t1method</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
         </div>
     </div>
     <a href="#" id="scrollToTopButton">
@@ -316,9 +357,6 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
 <div class="pp-container">
         <section class="pre-and-post">
             <div class="has-text-left">
-                
-                <p>Previous post</p>
-                <a href="https://zjx-ERROR.github.io/post/markdown_syntax_guide/">Markdown Syntax Guide</a>
                 
             </div>
             <div class="has-text-right">
