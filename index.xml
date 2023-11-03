@@ -6,7 +6,22 @@
     <description>Recent content on Turtle Titan</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 18 Feb 2023 22:19:13 +0800</lastBuildDate><atom:link href="https://zjx-ERROR.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 01 Nov 2023 00:35:31 +0800</lastBuildDate><atom:link href="https://zjx-ERROR.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Golang技巧</title>
+      <link>https://zjx-ERROR.github.io/post/golangtip/</link>
+      <pubDate>Wed, 01 Nov 2023 00:35:31 +0800</pubDate>
+      
+      <guid>https://zjx-ERROR.github.io/post/golangtip/</guid>
+      <description>1. 值传递还是引用传递 Go函数的参数始终按值传递。
+当结构体（或数组）类型的变量传递给函数时，整个结构都会被复制。
+如果传递的是结构体指针，则复制的是指针，占8字节内存大小（64位系统），它指向的结构体不会被复制。
+这是否意味着传递结构体指针会更好吗？
+传递指针的结构体会被放置在堆内存中，而不是栈中。
+如果动态分配的结构体占用多于直接传递，那么将它复制到栈中会更快：
+package test import ( &amp;#34;os&amp;#34; &amp;#34;runtime/trace&amp;#34; &amp;#34;testing&amp;#34; ) type S struct { a, b, c int64 d, e, f string g, h, i float64 } func byValue() S { return S{ a: 1, b: 1, c: 1, d: &amp;#34;foo&amp;#34;, e: &amp;#34;bar&amp;#34;, f: &amp;#34;baz&amp;#34;, g: 1.0, h: 1.0, i: 1.0, } } func byReference() *S { return &amp;amp;S{ a: 1, b: 1, c: 1, d: &amp;#34;foo&amp;#34;, e: &amp;#34;bar&amp;#34;, f: &amp;#34;baz&amp;#34;, g: 1.</description>
+    </item>
+    
     <item>
       <title>About Me</title>
       <link>https://zjx-ERROR.github.io/about/</link>
@@ -14,15 +29,6 @@
       
       <guid>https://zjx-ERROR.github.io/about/</guid>
       <description></description>
-    </item>
-    
-    <item>
-      <title>Self Reliance</title>
-      <link>https://zjx-ERROR.github.io/post/self-reliance/</link>
-      <pubDate>Sat, 18 Feb 2023 22:19:13 +0800</pubDate>
-      
-      <guid>https://zjx-ERROR.github.io/post/self-reliance/</guid>
-      <description>I read the other day some verses written by an eminent painter which were original and not conventional. The soul always hears an admonition in such lines, let the subject be what it may. The sentiment they instill is of more value than any thought they may contain. To believe your own thought, to believe that what is true for you in your private heart is true for all men, —that is genius.</description>
     </item>
     
     <item>
@@ -34,16 +40,6 @@
       <description>This article offers a sample of basic Markdown syntax that can be used in Hugo content files, also it shows whether basic HTML elements are decorated with CSS in a Hugo theme.
 Headings The following HTML &amp;lt;h1&amp;gt;—&amp;lt;h6&amp;gt; elements represent six levels of section headings. &amp;lt;h1&amp;gt; is the highest section level while &amp;lt;h6&amp;gt; is the lowest.
 H1 H2 H3 H4 H5 H6 Paragraph Xerum, quo qui aut unt expliquam qui dolut labo.</description>
-    </item>
-    
-    <item>
-      <title>Lorem Ipsum</title>
-      <link>https://zjx-ERROR.github.io/post/lorem-ipsum/</link>
-      <pubDate>Sun, 10 Apr 2022 16:50:28 +0800</pubDate>
-      
-      <guid>https://zjx-ERROR.github.io/post/lorem-ipsum/</guid>
-      <description>Lorem ipsum dolor sit amet, consectetur&amp;hellip;
-What is Lorem Ipsum? In mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus utn mollis cursus ligula, et venenatis neque maximus ut</description>
     </item>
     
   </channel>
