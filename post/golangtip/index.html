@@ -184,6 +184,9 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
   <ul>
     <li><a href="#1-值传递还是引用传递">1. 值传递还是引用传递</a></li>
     <li><a href="#2-继承">2. 继承</a></li>
+    <li><a href="#3-defer语句">3. Defer语句</a></li>
+    <li><a href="#4-循环">4. 循环</a></li>
+    <li><a href="#5-map迭代顺序并不随机">5. map迭代顺序并不随机</a></li>
   </ul>
 </nav></div>
             </aside>
@@ -209,12 +212,10 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
 </script>
             </div>
             <h2 id="1-值传递还是引用传递">1. 值传递还是引用传递</h2>
-<p>Go函数的参数始终按值传递。</p>
+<p><em><strong>Go函数的参数始终按值传递。</strong></em></p>
 <p>当结构体（或数组）类型的变量传递给函数时，整个结构都会被复制。</p>
 <p>如果传递的是结构体指针，则复制的是指针，占8字节内存大小（64位系统），它指向的结构体不会被复制。</p>
-<blockquote>
-<p>这是否意味着传递结构体指针会更好吗？</p>
-</blockquote>
+<p><em><strong>这是否意味着传递结构体指针会更好吗？</strong></em></p>
 <p>传递指针的结构体会被放置在堆内存中，而不是栈中。</p>
 <p>如果动态分配的结构体占用多于直接传递，那么将它复制到栈中会更快：</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">test</span>
@@ -300,11 +301,10 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
 <p>对于第二张图，指针的使用迫使go编译器将变量逃逸到堆上，并且给垃圾收集器施加压力。</p>
 <p>总之，不要假设值传递会很慢，如果关注性能，可以使用go profiler。</p>
 <h2 id="2-继承">2. 继承</h2>
-<p>重新定义 VS 继承类型</p>
 <p>Go类型系统不像C++或Java那样面向对象。Go无法真正继承结构体或接口，但可以将它们嵌套在一起以创建更复杂的结构体或接口。</p>
 <blockquote>
 <p><strong>There is</strong> an important way in which embedding differs from subclassing. When we embed a type, the methods of that type become methods of the outer type, but when they&rsquo;re invoked the receiver of the method is the inner type, not the outer one.</p>
-<p><a href="https://golang.org/doc/effective_go">https://golang.org/doc/effective_go</a></p>
+<p>&mdash; <a href="https://golang.org/doc/effective_go">https://golang.org/doc/effective_go</a></p>
 </blockquote>
 <p>除了嵌入类型之外，Go还允许重新定义类型。重新定义继承类型的字段，但不继承其方法。</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
@@ -339,7 +339,222 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
 </span></span><span style="display:flex;"><span>    <span style="color:#75715e">// mt3.t1method未定义
 </span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">mt3</span>.<span style="color:#a6e22e">t1method</span>()
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div>
+</span></span></code></pre></div><h2 id="3-defer语句">3. Defer语句</h2>
+<p><em><strong>defer语句将函数调用推送到列表上。保存的列表在函数返回后执行。defer通常用于简化执行各种清理操作。</strong></em></p>
+<p>需要注意的是：</p>
+<ul>
+<li>当函数返回时调用defer函数，在调用defer时其参数完成了赋值。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">errors</span>.<span style="color:#a6e22e">New</span>(<span style="color:#e6db74">&#34;defer&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">errors</span>.<span style="color:#a6e22e">New</span>(<span style="color:#e6db74">&#34;Something happening&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>Something happening</p>
+<p>defer</p>
+</blockquote>
+<ul>
+<li>函数返回后，defer函数按照后进先出的顺序执行。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;one&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;two&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;three&#34;</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>three
+two
+one</p>
+</blockquote>
+<h2 id="4-循环">4. 循环</h2>
+<p><em><strong>for循环迭代器变量会被重用</strong></em></p>
+<p>在循环中，每次迭代都会重用同一个的索引变量和值变量。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">out</span> []<span style="color:#f92672">*</span><span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">3</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">out</span> = append(<span style="color:#a6e22e">out</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Values:&#34;</span>, <span style="color:#f92672">*</span><span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">0</span>], <span style="color:#f92672">*</span><span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">1</span>], <span style="color:#f92672">*</span><span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">2</span>])
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Addresses:&#34;</span>, <span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">0</span>], <span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">1</span>], <span style="color:#a6e22e">out</span>[<span style="color:#ae81ff">2</span>])
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>Values: 3 3 3</p>
+<p>Addresses: 0xc0000120e0 0xc0000120e0 0xc0000120e0</p>
+</blockquote>
+<p>在循环中启动goroutine也是类似：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;time&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">3</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#66d9ef">func</span>() {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>        }()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Sleep</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>333</p>
+</blockquote>
+<p>这些goroutine是在这个循环中创建的，但是运行它们需要一些时间。</p>
+<p>变量i被goroutine使用了，所以发生了逃逸，变量i实际上是一个指针。</p>
+<p>所以，当goroutine执行时，捕获的迭代变量i一般是最后的值。</p>
+<p>在这种情况下，可以在代码块内创建一个新变量，或者将迭代器变量作为参数传递给goroutine。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;time&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">3</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">i</span> <span style="color:#66d9ef">int</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>        }(<span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Sleep</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// 或者
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">3</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">i</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#66d9ef">func</span>() {
+</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>        }()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Sleep</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Second</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>012</p>
+</blockquote>
+<p>如果循环不是启动goroutine，二十调用一个简单的函数，则代码会按预期执行：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">3</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span>() {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>)
+</span></span><span style="display:flex;"><span>    }()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>012</p>
+</blockquote>
+<p>每个函数调用都不会让循环继续，知道函数执行结束，在这段时间将获得预期的值。</p>
+<p>再看看一个更复杂的例子：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;time&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">myStruct</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">v</span> <span style="color:#66d9ef">int</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">s</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">myStruct</span>) <span style="color:#a6e22e">myMethod</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;%v, %p\n&#34;</span>, <span style="color:#a6e22e">s</span>.<span style="color:#a6e22e">v</span>, <span style="color:#a6e22e">s</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">byValue</span> <span style="color:#f92672">:=</span> []<span style="color:#a6e22e">myStruct</span>{{<span style="color:#ae81ff">1</span>}, {<span style="color:#ae81ff">2</span>}, {<span style="color:#ae81ff">3</span>}}
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">byReference</span> <span style="color:#f92672">:=</span> []<span style="color:#f92672">*</span><span style="color:#a6e22e">myStruct</span>{{<span style="color:#ae81ff">1</span>}, {<span style="color:#ae81ff">2</span>}, {<span style="color:#ae81ff">3</span>}}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;By value&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">byValue</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#a6e22e">i</span>.<span style="color:#a6e22e">myMethod</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Sleep</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Millisecond</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">100</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;By reference&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">byReference</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#a6e22e">i</span>.<span style="color:#a6e22e">myMethod</span>()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Sleep</span>(<span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Millisecond</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">100</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>By value</p>
+<p>3, 0xc000012120</p>
+<p>3, 0xc000012120</p>
+<p>3, 0xc000012120</p>
+<p>By reference</p>
+<p>1, 0xc0000120e0</p>
+<p>3, 0xc0000120f0</p>
+<p>2, 0xc0000120e8</p>
+</blockquote>
+<p>当通过引用使用myStruct时，它的运行就好像没有陷阱一样！这与Goroutine的创建方式有关。</p>
+<p>Goroutine参数在Goroutine创建时就被赋值，方法接收者（myMethod的myStruct）实际上是一个参数。</p>
+<p>当按值调用时：由于myMethod的参数s是指针类型，因此i的地址作为参数传递给了Goroutine。</p>
+<p>我们知道迭代器变量会被重用，因此每次都是相同的地址。当迭代器执行时，它将把新的myStruct值复制到i变量相同的地址。打印的值时Goroutine执行时变量i的值。</p>
+<p>当通过指针调用时：参数已经是一个指针，因此它的值在创建Goroutine时被推送到新Goroutine的栈中。</p>
+<p>这恰好时我们想要的地址，并且打印了预期的值。</p>
+<h2 id="5-map迭代顺序并不随机">5. map迭代顺序并不随机</h2>
+<p><em><strong>从技术上讲，map迭代顺序是“未定义的”</strong></em></p>
+<p>Go在内部使用哈希表完成映射，因此map的迭代通常会按照map元素在该表中的布局顺序进行。</p>
+<p>当新元素添加到map中时，这个顺序时不可靠的，并且会随着哈希表的增长而发生变化。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">int</span>{<span style="color:#ae81ff">0</span>: <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>: <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>: <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>: <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>: <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">5</span>: <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">6</span>: <span style="color:#ae81ff">6</span>}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">5</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">m</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>, <span style="color:#e6db74">&#34; &#34;</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">7</span>] = <span style="color:#ae81ff">7</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">8</span>] = <span style="color:#ae81ff">8</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">9</span>] = <span style="color:#ae81ff">9</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">5</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">m</span> {
+</span></span><span style="display:flex;"><span>			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Print</span>(<span style="color:#a6e22e">i</span>, <span style="color:#e6db74">&#34; &#34;</span>)
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>()
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>0 1 2 3 4 5 6</p>
+<p>4 5 6 0 1 2 3</p>
+<p>0 1 2 3 4 5 6</p>
+<p>0 1 2 3 4 5 6</p>
+<p>2 3 4 5 6 0 1</p>
+<p>0 1 2 3 4 6 5 7 8 9</p>
+<p>3 4 6 0 1 2 9 5 7 8</p>
+<p>3 4 6 0 1 2 9 5 7 8</p>
+<p>6 0 1 2 3 4 5 7 8 9</p>
+<p>5 7 8 9 0 1 2 3 4 6</p>
+</blockquote>
+<p>在上面的例子中，当map从1到6初始化map时，它们将按该顺序添加到哈希表中。</p>
+<p>前五行打印的都是按顺序写入的数字，Go仅随机化从哪个元素开始迭代。</p>
+<p>向map添加更多元素会使map的哈希表增长，从而对整个哈希表进行重新排序。最后五行打印不再具有任何明显的顺序。</p>
+
         </div>
     </div>
     <a href="#" id="scrollToTopButton">
@@ -352,7 +567,53 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
                 d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z"
                 p-id="3990" fill="#363636"></path>
         </svg>
-    </a>
+    </a><hr style="border-top: 1px solid #EEEEEE;">
+<div id="comment"></div>
+<script>
+    const getStoredTheme = () => localStorage.getItem("theme") === "dark" ? "dark" : "light";
+
+    const setGiscusTheme = () => {
+        const sendMessage = (message) => {
+            const iframe = document.querySelector('iframe.giscus-frame');
+            if (iframe) {
+                iframe.contentWindow.postMessage({giscus: message}, 'https://giscus.app');
+            }
+        }
+        sendMessage({setConfig: {theme: getStoredTheme()}})
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const giscusAttributes = {
+            "src": "https://giscus.app/client.js",
+            "data-repo": "zjx-ERROR\/zjx-ERROR.github.io",
+            "data-repo-id": "R_kgDOKmiqlg",
+            "data-category": "Announcements",
+            "data-category-id": "DIC_kwDOKmiqls4CarY3",
+            "data-mapping": "og:title",
+            "data-reactions-enabled": "1",
+            "data-emit-metadata": "0",
+            "data-input-position": "bottom",
+            "data-theme": getStoredTheme(),
+            "data-lang": "zh-CN",
+            "data-loading": "lazy",
+            "crossorigin": "anonymous",
+        };
+
+        
+        const giscusScript = document.createElement("script");
+        Object.entries(giscusAttributes).forEach(
+            ([key, value]) => giscusScript.setAttribute(key, value));
+        document.getElementById("comment").appendChild(giscusScript);
+
+        
+        const themeToggle = document.querySelector(".theme-toggle");
+        if (themeToggle) {
+            themeToggle.addEventListener("click", setGiscusTheme);
+        }
+    });
+
+</script>
+
 
 <div class="pp-container">
         <section class="pre-and-post">
