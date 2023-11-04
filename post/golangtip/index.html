@@ -187,6 +187,13 @@ package test import ( &#34;os&#34; &#34;runtime/trace&#34; &#34;testing&#34; ) t
     <li><a href="#3-defer语句">3. Defer语句</a></li>
     <li><a href="#4-循环">4. 循环</a></li>
     <li><a href="#5-map迭代顺序并不随机">5. map迭代顺序并不随机</a></li>
+    <li><a href="#6-map是一个指针">6. map是一个指针</a></li>
+    <li><a href="#7-struct类型">7. struct{}类型</a></li>
+    <li><a href="#8-map的容量">8. map的容量</a></li>
+    <li><a href="#9-map值无法寻址">9. map值无法寻址</a></li>
+    <li><a href="#10-map并发安全问题">10. map并发安全问题</a></li>
+    <li><a href="#11-go字符串都是utf-8">11. Go字符串都是UTF-8？</a></li>
+    <li><a href="#12-iota从零编号">12. iota从零编号？</a></li>
   </ul>
 </nav></div>
             </aside>
@@ -554,7 +561,157 @@ one</p>
 <p>在上面的例子中，当map从1到6初始化map时，它们将按该顺序添加到哈希表中。</p>
 <p>前五行打印的都是按顺序写入的数字，Go仅随机化从哪个元素开始迭代。</p>
 <p>向map添加更多元素会使map的哈希表增长，从而对整个哈希表进行重新排序。最后五行打印不再具有任何明显的顺序。</p>
-
+<h2 id="6-map是一个指针">6. map是一个指针</h2>
+<p><em><strong>在Go中map关键字是*runtime.hmap的别名</strong></em></p>
+<p>由于map是一个指针，因此将其作为函数入参，指向的是同一个map数据结构。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">f1</span>(<span style="color:#a6e22e">m</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">int</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">5</span>] = <span style="color:#ae81ff">123</span> 
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">int</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">f1</span>(<span style="color:#a6e22e">m</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">5</span>]) <span style="color:#75715e">// prints 123
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="7-struct类型">7. struct{}类型</h2>
+<p>Go没有类似c++的std:set类型。但是可以通过struct{}作为map的值代替set类型。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">struct</span>{})
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">123</span>] = <span style="color:#66d9ef">struct</span>{}{}
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">key</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">123</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">key</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>可能你会想到用bool类型作为map的值也未尝不可，但是实际上struct{}类型占用内存大小为零字节。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;unsafe&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">unsafe</span>.<span style="color:#a6e22e">Sizeof</span>(<span style="color:#66d9ef">false</span>)) <span style="color:#75715e">// 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">unsafe</span>.<span style="color:#a6e22e">Sizeof</span>(<span style="color:#66d9ef">struct</span>{}{})) <span style="color:#75715e">// 0
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="8-map的容量">8. map的容量</h2>
+<p>map是一个相当复杂的数据结构。</p>
+<p>虽然可以可以在创建时指定其初始容量，但在以后时无法获取其容量的，至少无法通过cap获取。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">bool</span>, <span style="color:#ae81ff">5</span>) <span style="color:#75715e">// 初始化容量为5
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(len(<span style="color:#a6e22e">m</span>))        <span style="color:#75715e">// len没问题
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(cap(<span style="color:#a6e22e">m</span>))        <span style="color:#75715e">// 编译器错误，invalid argument m (type map[int]bool) for cap
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="9-map值无法寻址">9. map值无法寻址</h2>
+<p>Go的map是通过哈希表实现的，哈希表需要在map增长或缩小时移动元素的，因此Go不允许获取map元素的地址。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">item</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">value</span> <span style="color:#66d9ef">string</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#a6e22e">item</span>{<span style="color:#ae81ff">1</span>: {<span style="color:#e6db74">&#34;one&#34;</span>}}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">1</span>].<span style="color:#a6e22e">value</span>) 
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">addr</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">1</span>]           <span style="color:#75715e">// error: cannot take the address of m[1]
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">m</span>[<span style="color:#ae81ff">1</span>].<span style="color:#a6e22e">value</span> = <span style="color:#e6db74">&#34;two&#34;</span>      <span style="color:#75715e">// error: can&#39;t assign to struct field m[1].value in map
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="10-map并发安全问题">10. map并发安全问题</h2>
+<p><em><strong>常规的map不是并发安全的</strong></em></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;math/rand&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;time&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">readWrite</span>(<span style="color:#a6e22e">m</span> <span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">int</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">100</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">k</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Int</span>()
+</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">m</span>[<span style="color:#a6e22e">k</span>] = <span style="color:#a6e22e">m</span>[<span style="color:#a6e22e">k</span>] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">m</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">map</span>[<span style="color:#66d9ef">int</span>]<span style="color:#66d9ef">int</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; <span style="color:#a6e22e">i</span> &lt; <span style="color:#ae81ff">10</span>; <span style="color:#a6e22e">i</span><span style="color:#f92672">++</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">go</span> <span style="color:#a6e22e">readWrite</span>(<span style="color:#a6e22e">m</span>)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">select</span>{}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><blockquote>
+<p>fatal error: concurrent map read and map write</p>
+<p>fatal error: concurrent map writes</p>
+<p>&hellip;</p>
+</blockquote>
+<p>sync包中有一个特殊的map，可以安全地供多个Goroutine并发读写。</p>
+<p>不过Go官方文档建议在大多数情况下使用带锁的常规map或协调控制，sync.Map不是类型安全的，它类似于map[interface{}]interface{}。</p>
+<blockquote>
+<p>The Map type is optimized for two common use cases: (1) when the entry for a given key is only ever written once but read many times, as in caches that only grow, or (2) when multiple goroutines read, write, and overwrite entries for disjoint sets of keys. In these two cases, use of a Map may significantly reduce lock contention compared to a Go map paired with a separate Mutex or RWMutex.
+&mdash; <a href="https://github.com/golang/go/blob/master/src/sync/map.go">https://github.com/golang/go/blob/master/src/sync/map.go</a></p>
+</blockquote>
+<p>即</p>
+<ul>
+<li>当给定键只被写入一次但被多次读取时，例如在仅会增长的缓存中。</li>
+<li>当多个Gouroutine读取、写入和覆盖不同键的条目时。</li>
+</ul>
+<h2 id="11-go字符串都是utf-8">11. Go字符串都是UTF-8？</h2>
+<p><em><strong>编译器或Go字符串处理代码与最终编码为UTF-8的字符串没有任何关系</strong></em></p>
+<p>造成这种混乱的原因之一就是字符串的字面量。虽然字符串本身没有任何特定的编码，但Go编译器始终将源代码解释为UTF-8。</p>
+<p>定义字符串字面量之后，文本编辑器会将其于代码的其余部分一样保存为UTF-8编码的Unicode字符串。这就是Go解析后将编译到程序中的内容。</p>
+<p>下面例子，定义了非UTF-8字符串，为了证明这一点：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;fmt&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;unicode/utf8&#34;</span>
+</span></span><span style="display:flex;"><span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">s</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;\xc1\x2b\xa3&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">utf8</span>.<span style="color:#a6e22e">ValidString</span>(<span style="color:#a6e22e">s</span>)) <span style="color:#75715e">// false
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">s</span>) <span style="color:#75715e">// �+�
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>}
+</span></span></code></pre></div><h2 id="12-iota从零编号">12. iota从零编号？</h2>
+<p>iota在Go中以常量编号开始，但并不像某些人想象的那样从零开始，二十从当前const块中常量的索引开始：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">myconst</span> = <span style="color:#e6db74">&#34;c&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">myconst2</span> = <span style="color:#e6db74">&#34;c2&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">two</span> = <span style="color:#66d9ef">iota</span> <span style="color:#75715e">// 2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)
+</span></span></code></pre></div><p>在当前const块中使用iota两次不会重置编号</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#66d9ef">const</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">zero</span> = <span style="color:#66d9ef">iota</span> <span style="color:#75715e">// 0
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">one</span> <span style="color:#75715e">// 1
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">two</span> = <span style="color:#66d9ef">iota</span> <span style="color:#75715e">// 2
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>)
+</span></span></code></pre></div>
         </div>
     </div>
     <a href="#" id="scrollToTopButton">
